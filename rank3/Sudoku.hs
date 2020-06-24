@@ -5,9 +5,7 @@
 module Sudoku where
 
 import Data.List
-import qualified Data.Map as Map
-import Control.Monad.State
-import Data.Array 
+import Data.Array
 
 type Fuzzy a = [a]
 
@@ -16,8 +14,7 @@ certain [_] = True
 certain _   = False
 
 type Array2D a = Array (Int, Int) a
-type SudokuFuzzy = Map.Map (Int, Int) (Fuzzy Int)
-type SudokuState b = State SudokuFuzzy b
+type SudokuFuzzy = [((Int, Int), Fuzzy Int)]
 
 constraint :: Array2D Int -> (Int, Int) -> Fuzzy Int
 constraint arr (x, y)
@@ -29,23 +26,46 @@ constraint arr (x, y)
         m      = 3 * (x `div` 3)
         n      = 3 * (y `div` 3)
 
+genConstraint :: Array2D Int -> SudokuFuzzy
+genConstraint arr = (\e -> (e, constraint arr e)) <$> indices arr
+
+pickOne :: SudokuFuzzy -> ((Int, Int), Fuzzy Int)
+pickOne = head . dropWhile (certain . snd)
+
 solvable :: SudokuFuzzy -> Bool
-solvable s = if any null $ Map.elems s then False else True
+solvable c = if any (null . snd) c then False else True
 
 solved :: SudokuFuzzy -> Bool
-solved s = if all certain $ Map.elems s then True else False 
+solved c = if all (certain . snd) c then True else False 
 
-pickOne :: Array2D Int -> SudokuState (Maybe (Array2D Int))
-pickOne arr  = do
-  m <- get
-  if solveable m 
-  then
-    let pos = fst . head . dropWhile $ ((/= 0) . snd) $ assocs m 
-    x : xs <- Map.lookup pos m
-    put $ Map.insert pos [x] m
-    return Just $ accum (\_ -> \b -> b) arr [(pos, x)] 
-  else return Nothing
-    
+update :: SudokuFuzzy -> Array2D Int -> Array2D Int
+update c arr = accum (\_ -> \b -> b) arr $ map (\(e, [x]) -> (e, x)) $ filter (certain . snd) c
+
+guess :: Array2D Int -> ((Int, Int), Fuzzy Int) -> Maybe (Array2D Int)
+guess arr (pos, [])     = Nothing
+guess arr (pos, x : xs) = if solvable updatedC
+                          then if solved updatedC
+                               then Just updatedArr
+                               else case guess updatedArr (pickOne $ updatedC) of
+                                    Nothing -> guess arr (pos, xs)
+                                    e       -> e
+                          else guess arr (pos, xs)
+                          where c          = genConstraint newArr
+                                newArr     = accum (\_ -> \b -> b) arr [(pos, x)]
+                                updatedArr = update c newArr
+                                updatedC   = genConstraint updatedArr
+
+sudoku :: [[Int]] -> [[Int]]
+sudoku puzzle = make2D 9 . elems $ maybe undefined id (guess updatedArr $ pickOne updatedC)
+                where arr            = listArray ((0, 0), (8, 8)) $ concat puzzle
+                      c              = genConstraint arr
+                      updatedArr     = update c arr
+                      updatedC       = genConstraint updatedArr
+                      make2D n ls    = if length ls == n
+                                       then [ls]
+                                       else first : make2D n rest
+                                       where (first, rest) = splitAt n ls
+
 puzzle :: [[Int]]
 puzzle = [[5,3,0,0,7,0,0,0,0],
           [6,0,0,1,9,5,0,0,0],
