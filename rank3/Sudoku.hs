@@ -7,16 +7,9 @@ module Sudoku where
 import Data.List
 import Data.Array
 
-type Fuzzy a = [a]
-
-certain :: Fuzzy a -> Bool
-certain [_] = True
-certain _   = False
-
 type Array2D a = Array (Int, Int) a
-type SudokuFuzzy = [((Int, Int), Fuzzy Int)]
 
-constraint :: Array2D Int -> (Int, Int) -> Fuzzy Int
+constraint :: Array2D Int -> (Int, Int) -> [Int]
 constraint arr (x, y)
   | arr ! (x, y) == 0 = [1..9] \\ (row ++ col ++ region)
   | otherwise         = [arr ! (x, y)] 
@@ -26,53 +19,28 @@ constraint arr (x, y)
         m      = 3 * (x `div` 3)
         n      = 3 * (y `div` 3)
 
-genConstraint :: Array2D Int -> SudokuFuzzy
-genConstraint arr = (\e -> (e, constraint arr e)) <$> indices arr
+solved :: Array2D Int -> Bool
+solved = all (/= 0) . elems
 
-pickOne :: SudokuFuzzy -> ((Int, Int), Fuzzy Int)
-pickOne = head . dropWhile (certain . snd)
+solvable :: Array2D Int -> Bool
+solvable = any (== 0) . elems
 
-solvable :: SudokuFuzzy -> Bool
-solvable c = if any (null . snd) c then False else True
+findZero :: Array2D Int -> (Int, Int)
+findZero arr = head . dropWhile ((/= 0) . (arr !)) $ indices arr
 
-solved :: SudokuFuzzy -> Bool
-solved c = if all (certain . snd) c then True else False 
-
-update :: SudokuFuzzy -> Array2D Int -> Array2D Int
-update c arr = accum (\_ -> \b -> b) arr $ map (\(e, [x]) -> (e, x)) $ filter (certain . snd) c
-
-guess :: Array2D Int -> ((Int, Int), Fuzzy Int) -> Maybe (Array2D Int)
-guess arr (pos, [])     = Nothing
-guess arr (pos, x : xs) = if solvable updatedC
-                          then if solved updatedC
-                               then Just updatedArr
-                               else case guess updatedArr (pickOne $ updatedC) of
-                                    Nothing -> guess arr (pos, xs)
-                                    e       -> e
-                          else guess arr (pos, xs)
-                          where c          = genConstraint newArr
-                                newArr     = accum (\_ -> \b -> b) arr [(pos, x)]
-                                updatedArr = update c newArr
-                                updatedC   = genConstraint updatedArr
+backtrack :: Array2D Int -> [Array2D Int]
+backtrack arr | solved arr   = [arr]
+              | solvable arr = concatMap backtrack $ map (f pos) xs
+              | otherwise  = []
+              where pos     = findZero arr
+                    xs      = constraint arr pos
+                    f pos x = accum (\_ -> \b -> b) arr [(pos, x)]
 
 sudoku :: [[Int]] -> [[Int]]
-sudoku puzzle = make2D 9 . elems $ maybe undefined id (guess updatedArr $ pickOne updatedC)
+sudoku puzzle = make2D 9 . elems $ head $ backtrack arr
                 where arr            = listArray ((0, 0), (8, 8)) $ concat puzzle
-                      c              = genConstraint arr
-                      updatedArr     = update c arr
-                      updatedC       = genConstraint updatedArr
                       make2D n ls    = if length ls == n
                                        then [ls]
                                        else first : make2D n rest
                                        where (first, rest) = splitAt n ls
 
-puzzle :: [[Int]]
-puzzle = [[5,3,0,0,7,0,0,0,0],
-          [6,0,0,1,9,5,0,0,0],
-          [0,9,8,0,0,0,0,6,0],
-          [8,0,0,0,6,0,0,0,3],
-          [4,0,0,8,0,3,0,0,1],
-          [7,0,0,0,2,0,0,0,6],
-          [0,6,0,0,0,0,2,8,0],
-          [0,0,0,4,1,9,0,0,5],
-          [0,0,0,0,8,0,0,7,9]]
