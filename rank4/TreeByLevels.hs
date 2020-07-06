@@ -1,3 +1,7 @@
+-- Problem: Sort binary tree by levels
+-- Rank: 4
+-- Src: https://www.codewars.com/kata/52bef5e3588c56132c0003bc
+
 module TreeByLevels where
 
 data TreeNode a = TreeNode {
