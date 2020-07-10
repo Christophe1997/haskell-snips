@@ -1,3 +1,7 @@
+-- Problem: Hamming Numbers
+-- Rank: 4
+-- Src: https://www.codewars.com/kata/526d84b98f428f14a60008da
+
 module Hamming where
 
 hamming  :: Int -> Int
