@@ -1,6 +1,11 @@
 -- Problem: Sudoku Solver
 -- Rank: 3
 -- Src: https://www.codewars.com/kata/5296bc77afba8baa690002d7
+-- Note: functional backtrack
+-- backtrack :: a -> [a]
+-- backtrack a | solved a  = [a]
+--             | invalid a = []
+--             | otherwise = concatMap backtrack $ children a
 
 module Sudoku where
 

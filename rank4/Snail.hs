@@ -1,6 +1,7 @@
 -- Problem: Snail
 -- Rank: 4
 -- Src: https://www.codewars.com/kata/521c2db8ddc89b9b7a0000c1
+-- Note: transpose is powerful
 
 module Snail where
 
@@ -18,8 +19,8 @@ snail ls = start ++ right ++ reverse end ++ reverse left ++ snail rest
                  (left, rest, right)           = foldr stripAndCons ([], [], []) mid
                  stripAndCons ls (s, m, e)     = (x0 : s, xs : m, x1 : e)
                                                  where ([x0], xs, [x1]) = strip ls 
-                 
-snailBest :: [[Int]] -> [Int]
-snailBest [] = []
-snailBest (xs:xss) = xs ++ (snail . reverse . transpose) xss
+-- The best solution                 
+-- snail :: [[Int]] -> [Int]
+-- snail []       = []
+-- snail (xs:xss) = xs ++ (snail . reverse . transpose) xss
 

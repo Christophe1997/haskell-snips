@@ -1,6 +1,7 @@
 -- Problem: Did you mean ...?
 -- Rank: 5
 -- Src: https://www.codewars.com/kata/5259510fc76e59579e0009d4
+-- Note: general memorize
 
 module DidYouMean where
 
